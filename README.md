@@ -1,77 +1,66 @@
 # Sign Language and Emotion Recognition System
 
 ## Project Overview
+This project is a Flask-based web application that performs real-time:
 
-This project is a real-time computer vision system designed to detect hand gestures (Sign Language) and recognize facial emotions using deep learning models. The goal of the system is to assist specially-abled children by improving communication through intelligent automation.
+- Person detection using YOLOv8
+- Emotion detection using DeepFace
+- Gesture region identification for future sign language integration
 
-The system captures live video from a webcam, detects hands using YOLO-based object detection, and analyzes facial expressions using an emotion recognition model.
-
----
-
-## Key Features
-
-- Real-time hand detection using YOLO
-- Facial emotion recognition from live webcam feed
-- Integrated sign and emotion processing pipeline
-- Modular Python project structure
-- Flask-based web application interface
+The system captures webcam input, processes each frame, and streams the result to a web interface.
 
 ---
 
 ## Technologies Used
 
 - Python
-- OpenCV
-- Ultralytics YOLO
-- DeepFace
 - Flask
-- PyTorch
+- OpenCV
+- YOLOv8 (Ultralytics)
+- DeepFace
+- TensorFlow
 
 ---
 
-## Installation and Setup
+## Current Implementation (Phase 1)
 
-1. Clone the repository:
+✔ Real-time webcam streaming using Flask  
+✔ Person detection using YOLOv8  
+✔ Emotion detection using DeepFace  
+✔ Gesture region extraction logic  
+✔ Modular architecture (`flask_app/` structure)
 
-   git clone https://github.com/apoorva-6575/sign-language-emotion-recognition.git
+This phase establishes the system architecture.
 
-2. Navigate into the project folder:
+---
 
-   cd sign-language-emotion-recognition
+## Future Scope (Phase 2)
 
-3. Install required dependencies:
+- MediaPipe hand landmark detection  
+- Custom sign language classifier training  
+- Dataset creation and model evaluation  
+- Accuracy metrics and performance analysis  
 
+---
+
+## How to Run
+
+1. Create virtual environment:
+   python -m venv venv
+
+2. Activate:
+   venv\Scripts\activate
+
+3. Install dependencies:
    pip install -r requirements.txt
 
-4. Run the application:
+4. Run application:
+   python flask_app/app.py
 
-   python main.py
-
----
-
-## Project Structure
-
-sign-language-emotion-recognition/
-│
-├── flask_app/
-├── emotion_detect.py
-├── hand_detect.py
-├── main.py
-├── requirements.txt
-└── README.md
-
----
-
-## Future Enhancements
-
-- Improve gesture classification accuracy
-- Optimize model performance for faster inference
-- Add voice output for detected signs
-- Deploy the system as a web-based application
+5. Open browser:
+   http://127.0.0.1:5000
 
 ---
 
 ## Author
-
-Apoorva Kala  
-PBL Project – Computer Science Engineering
+Apoorva Kala
