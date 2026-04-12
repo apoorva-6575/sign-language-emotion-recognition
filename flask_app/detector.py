@@ -1,19 +1,16 @@
 import cv2
-from ultralytics import YOLO
 from deepface import DeepFace
-import numpy as np
+from collections import deque
 
-# Load YOLO model
-model = YOLO("yolov8n.pt")
+# Load face detector
+face_cascade = cv2.CascadeClassifier(
+    cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+)
 
-# Emotion smoothing variables
-prev_emotion = ""
-emotion_counter = 0
-EMOTION_FRAME_SKIP = 5
+# Strong smoothing
+emotion_history = deque(maxlen=20)
 
 def generate_frames():
-    global prev_emotion, emotion_counter
-
     cap = cv2.VideoCapture(0)
 
     while True:
@@ -21,58 +18,52 @@ def generate_frames():
         if not success:
             break
 
-        # YOLO detection
-        results = model(frame)[0]
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        for box in results.boxes:
-            cls = int(box.cls[0])
+        faces = face_cascade.detectMultiScale(
+            gray, 1.3, 5, minSize=(100, 100)
+        )
 
-            # Only detect person
-            if cls == 0:
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
+        for (x, y, w, h) in faces:
+            face = frame[y:y+h, x:x+w]
 
-                # Draw person box
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.rectangle(frame, (x,y), (x+w,y+h), (0,255,0), 2)
 
-                # -------- EMOTION DETECTION (IMPROVED) --------
-                emotion = prev_emotion
+            try:
+                result = DeepFace.analyze(
+                    face,
+                    actions=['emotion'],
+                    enforce_detection=True
+                )
 
-                if emotion_counter % EMOTION_FRAME_SKIP == 0:
-                    try:
-                        # Crop face/upper body region
-                        face = frame[y1:y2, x1:x2]
+                emotions = result[0]['emotion']
+                dominant = result[0]['dominant_emotion']
+                confidence = emotions[dominant]
 
-                        result = DeepFace.analyze(
-                            face,
-                            actions=['emotion'],
-                            enforce_detection=False
-                        )
+                # 🔥 Ignore low confidence
+                if confidence < 60:
+                    continue
 
-                        emotion = result[0]['dominant_emotion']
-                        prev_emotion = emotion
+                # 🔥 Neutral correction (VERY IMPORTANT)
+                if dominant in ['fear', 'sad'] and emotions['neutral'] > 40:
+                    dominant = 'neutral'
 
-                    except:
-                        emotion = prev_emotion
+                emotion_history.append(dominant)
 
-                emotion_counter += 1
+                # 🔥 Strong smoothing (mode of history)
+                stable_emotion = max(set(emotion_history), key=emotion_history.count)
 
-                # Display emotion
-                cv2.putText(frame, emotion, (x1, y1 - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                cv2.putText(frame, stable_emotion,
+                            (x, y-10),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            1, (0,0,255), 2)
 
-                # -------- GESTURE REGION --------
-                upper_body = frame[y1:int((y1 + y2) / 2), x1:x2]
-
-                cv2.rectangle(frame, (x1, y1), (x2, int((y1 + y2) / 2)),
-                              (255, 0, 0), 2)
-
-                cv2.putText(frame, "Gesture Region", (x1, y1 + 30),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+            except:
+                pass
 
         # Encode frame
         ret, buffer = cv2.imencode('.jpg', frame)
         frame = buffer.tobytes()
 
-        # Stream frame
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
